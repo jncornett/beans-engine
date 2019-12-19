@@ -32,11 +32,10 @@ var Version = VersionField{0, 0, 1, 0}
 // LengthField ...
 type LengthField uint64
 
-// InstructionField ...
-type InstructionField struct {
-	Op     int8
-	Arg    int8
-	Option int8
+// OpField ...
+type OpField struct {
+	Type int8
+	Arg  int8
 }
 
 // DefaultByteOrder ...
@@ -54,8 +53,8 @@ func NewDecoder(r io.Reader) *Decoder {
 }
 
 // Unmarshal ...
-func Unmarshal(p []byte) ([]vm.Instruction, error) {
-	var out []vm.Instruction
+func Unmarshal(p []byte) ([]vm.Op, error) {
+	var out []vm.Op
 	if err := NewDecoder(bytes.NewReader(p)).Decode(&out); err != nil {
 		return nil, err
 	}
@@ -63,7 +62,7 @@ func Unmarshal(p []byte) ([]vm.Instruction, error) {
 }
 
 // Decode ...
-func (dec *Decoder) Decode(out *[]vm.Instruction) error {
+func (dec *Decoder) Decode(out *[]vm.Op) error {
 	var magic MagicField
 	if err := dec.read(&magic); err != nil {
 		return fmt.Errorf("invalid magic field: %w", err)
@@ -83,14 +82,13 @@ func (dec *Decoder) Decode(out *[]vm.Instruction) error {
 		return fmt.Errorf("invalid length field: %w", err)
 	}
 	for i := 0; LengthField(i) < length; i++ {
-		var instr InstructionField
-		if err := dec.read(&instr); err != nil {
-			return fmt.Errorf("at instruction %d: %w", i, err)
+		var op OpField
+		if err := dec.read(&op); err != nil {
+			return fmt.Errorf("at op %d: %w", i, err)
 		}
-		*out = append(*out, vm.Instruction{
-			Op:     vm.OpCode(instr.Op),
-			Arg:    vm.Value(instr.Arg),
-			Option: vm.Value(instr.Option),
+		*out = append(*out, vm.Op{
+			Type: vm.OpCode(op.Type),
+			Arg:  vm.Value(op.Arg),
 		})
 	}
 	return nil
@@ -112,7 +110,7 @@ func NewEncoder(w io.Writer) *Encoder {
 }
 
 // Marshal ...
-func Marshal(in []vm.Instruction) ([]byte, error) {
+func Marshal(in []vm.Op) ([]byte, error) {
 	var buf bytes.Buffer
 	if err := NewEncoder(&buf).Encode(in); err != nil {
 		return nil, err
@@ -121,7 +119,7 @@ func Marshal(in []vm.Instruction) ([]byte, error) {
 }
 
 // Encode ...
-func (enc *Encoder) Encode(in []vm.Instruction) error {
+func (enc *Encoder) Encode(in []vm.Op) error {
 	if err := enc.write(&Magic); err != nil {
 		return fmt.Errorf("failed to write magic field: %w", err)
 	}
@@ -132,14 +130,13 @@ func (enc *Encoder) Encode(in []vm.Instruction) error {
 	if err := enc.write(&length); err != nil {
 		return fmt.Errorf("failed to write length field: %w", err)
 	}
-	for i, instr := range in {
-		field := InstructionField{
-			Op:     int8(instr.Op),
-			Arg:    int8(instr.Arg),
-			Option: int8(instr.Option),
+	for i, op := range in {
+		field := OpField{
+			Type: int8(op.Type),
+			Arg:  int8(op.Arg),
 		}
 		if err := enc.write(&field); err != nil {
-			return fmt.Errorf("at instruction %d: %w", i, err)
+			return fmt.Errorf("at op %d: %w", i, err)
 		}
 	}
 	return nil

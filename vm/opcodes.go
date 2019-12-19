@@ -8,8 +8,8 @@ type OpCode int
 const (
 	// OpNoop ...
 	OpNoop OpCode = iota
-	// OpPushConst ...
-	OpPushConst
+	// OpPush ...
+	OpPush
 	// OpPop ...
 	OpPop
 	// OpCall ...
@@ -34,14 +34,16 @@ const (
 	OpLabel
 	// OpSyscall ...
 	OpSyscall
+	// OpMax ...
+	OpMax
 )
 
 func (op OpCode) String() string {
 	switch op {
 	case OpNoop:
 		return "Noop"
-	case OpPushConst:
-		return "PushConst"
+	case OpPush:
+		return "Push"
 	case OpPop:
 		return "Pop"
 	case OpCall:
@@ -66,6 +68,8 @@ func (op OpCode) String() string {
 		return "Label"
 	case OpSyscall:
 		return "Syscall"
+	case OpMax:
+		return "Max"
 	default:
 		return "OpCode(" + strconv.Itoa(int(op)) + ")"
 	}
@@ -74,7 +78,7 @@ func (op OpCode) String() string {
 // OpCodes ...
 var OpCodes = []OpCode{
 	OpNoop,
-	OpPushConst,
+	OpPush,
 	OpPop,
 	OpCall,
 	OpReturn,

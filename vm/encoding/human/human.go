@@ -34,8 +34,8 @@ func NewDecoder(r io.Reader) *Decoder {
 }
 
 // Unmarshal ...
-func Unmarshal(p []byte) ([]vm.Instruction, error) {
-	var out []vm.Instruction
+func Unmarshal(p []byte) ([]vm.Op, error) {
+	var out []vm.Op
 	if err := NewDecoder(bytes.NewReader(p)).Decode(&out); err != nil {
 		return nil, err
 	}
@@ -71,74 +71,64 @@ func parseValue(s string) (vm.Value, error) {
 	return vm.Value(v), nil
 }
 
-func parseInstruction(opName string, fields []string) (vm.Instruction, error) {
-	var (
-		arg    vm.Value
-		option vm.Value
-	)
+func parseOp(opName string, fields []string) (vm.Op, error) {
+	var arg vm.Value
 	op, ok := OpCodes[opName]
 	if !ok {
-		return vm.Instruction{}, fmt.Errorf("unknown opcode: %q", opName)
+		return vm.Op{}, fmt.Errorf("unknown opcode: %q", opName)
 	}
 	if len(fields) > 0 {
 		var err error
 		arg, err = parseValue(fields[0])
 		if err != nil {
-			return vm.Instruction{}, fmt.Errorf("could not parse opcode arg: %w", err)
-		}
-		if len(fields) > 1 {
-			option, err = parseValue(fields[1])
-			if err != nil {
-				return vm.Instruction{}, fmt.Errorf("could not parse opcode option: %w", err)
-			}
+			return vm.Op{}, fmt.Errorf("could not parse opcode arg: %w", err)
 		}
 	}
-	return vm.Instruction{
-		Op:     op,
-		Arg:    arg,
-		Option: option,
+	return vm.Op{
+		Type: op,
+		Arg:  arg,
 	}, nil
 }
 
 // DecodeLine ...
-func DecodeLine(line string) (instr vm.Instruction, ok bool, err error) {
+func DecodeLine(line string) (op vm.Op, ok bool, err error) {
 	line = strings.TrimSpace(line)
 	if line == "" || strings.HasPrefix(line, ";") {
-		return vm.Instruction{}, false, nil
+		return vm.Op{}, false, nil
 	}
 	fields := strings.Fields(line)
-	instr, err = DecodeArgs(fields...)
+	op, err = DecodeArgs(fields...)
 	if err != nil {
-		return vm.Instruction{}, false, err
+		return vm.Op{}, false, err
 	}
-	return instr, true, nil
+	return op, true, nil
 }
 
 // DecodeArgs ...
-func DecodeArgs(fields ...string) (vm.Instruction, error) {
+func DecodeArgs(fields ...string) (vm.Op, error) {
 	if len(fields) == 0 {
-		return vm.Instruction{}, errors.New("no fields provided")
+		return vm.Op{}, errors.New("no fields provided")
 	}
-	instr, err := parseInstruction(fields[0], fields[1:])
+	op, err := parseOp(fields[0], fields[1:])
 	if err != nil {
-		return vm.Instruction{}, err
+		return vm.Op{}, err
 	}
-	return instr, nil
+	return op, nil
 }
 
 // Decode ...
-func (dec *Decoder) Decode(out *[]vm.Instruction) error {
+func (dec *Decoder) Decode(out *[]vm.Op) error {
 	i := 0
 	for dec.scan.Scan() {
 		i++
-		instr, ok, err := DecodeLine(dec.scan.Text())
+		op, ok, err := DecodeLine(dec.scan.Text())
 		if err != nil {
 			return fmt.Errorf("at %d: %w", i, err)
 		}
 		if !ok {
 			continue
 		}
-		*out = append(*out, vm.Instruction(instr))
+		*out = append(*out, vm.Op(op))
 	}
 	if err := dec.scan.Err(); err != nil {
 		return err
@@ -157,7 +147,7 @@ func NewEncoder(w io.Writer) *Encoder {
 }
 
 // Marshal ...
-func Marshal(in []vm.Instruction) ([]byte, error) {
+func Marshal(in []vm.Op) ([]byte, error) {
 	var buf bytes.Buffer
 	if err := NewEncoder(&buf).Encode(in); err != nil {
 		return nil, err
@@ -166,14 +156,14 @@ func Marshal(in []vm.Instruction) ([]byte, error) {
 }
 
 // EncodeLine ...
-func EncodeLine(instr vm.Instruction) string {
-	return fmt.Sprintf("%s\t%d\t%d", strings.ToLower(instr.Op.String()), instr.Arg, instr.Option)
+func EncodeLine(op vm.Op) string {
+	return fmt.Sprintf("%s\t%d", strings.ToLower(op.Type.String()), op.Arg)
 }
 
 // Encode ...
-func (enc *Encoder) Encode(in []vm.Instruction) error {
-	for i, instr := range in {
-		if _, err := fmt.Fprintln(enc.w, EncodeLine(instr)); err != nil {
+func (enc *Encoder) Encode(in []vm.Op) error {
+	for i, op := range in {
+		if _, err := fmt.Fprintln(enc.w, EncodeLine(op)); err != nil {
 			return fmt.Errorf("at %d: %w", i+1, err)
 		}
 	}

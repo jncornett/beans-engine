@@ -8,13 +8,13 @@ import (
 )
 
 func TestMarshalUnmarshal(t *testing.T) {
-	code := []vm.Instruction{
-		vm.Instruction{Op: vm.OpPushConst, Arg: 42},
-		vm.Instruction{Op: vm.OpPushConst, Arg: 43},
-		vm.Instruction{Op: vm.OpCompare},
-		vm.Instruction{Op: vm.OpJumpIf, Option: 2},
-		vm.Instruction{Op: vm.OpJumpIf},
-		vm.Instruction{Op: vm.OpNoop},
+	code := []vm.Op{
+		vm.Op{Type: vm.OpPush, Arg: 42},
+		vm.Op{Type: vm.OpPush, Arg: 43},
+		vm.Op{Type: vm.OpCompare},
+		vm.Op{Type: vm.OpJumpIf},
+		vm.Op{Type: vm.OpJumpIf},
+		vm.Op{Type: vm.OpNoop},
 	}
 	b, err := Marshal(code)
 	require.NoError(t, err)

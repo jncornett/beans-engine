@@ -61,8 +61,14 @@ type Stack struct {
 	Max  uint
 }
 
-// Push ...
-func (stack *Stack) Push(iptr int) (pushed bool) {
+func (stack *Stack) ensureBaseFrame() (ensured bool) {
+	if stack.Max == 0 {
+		return stack.push(0)
+	}
+	return true
+}
+
+func (stack *Stack) push(iptr int) (pushed bool) {
 	if stack.Max >= uint(len(stack.Data)) {
 		return false
 	}
@@ -71,16 +77,18 @@ func (stack *Stack) Push(iptr int) (pushed bool) {
 	return true
 }
 
+// Push ...
+func (stack *Stack) Push(iptr int) (pushed bool) {
+	if !stack.ensureBaseFrame() {
+		return false
+	}
+	return stack.push(iptr)
+}
+
 // PushValue ...
 func (stack *Stack) PushValue(val Value) (pushed bool) {
-	frame, ok := stack.Get(-1)
-	if !ok {
-		stack.Push(0)
-		frame, ok = stack.Get(-1)
-		if !ok {
-			return false
-		}
-	}
+	stack.ensureBaseFrame()
+	frame, _ := stack.Get(-1)
 	return frame.Push(val)
 }
 
@@ -117,8 +125,11 @@ func (stack *Stack) Pop(n int) (popped int) {
 		return 0
 	}
 	pop := uint(n)
-	if pop > stack.Max {
-		pop = stack.Max
+	if pop >= stack.Max {
+		if stack.Max == 0 {
+			return 0
+		}
+		pop = stack.Max - 1
 	}
 	stack.Max -= pop
 	return int(pop)

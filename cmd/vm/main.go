@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -10,58 +9,74 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/alexflint/go-arg"
+	"github.com/c-bata/go-prompt"
 	"github.com/logrusorgru/aurora"
+	"github.com/naoina/toml"
 	"github.com/olekukonko/tablewriter"
 
-	"github.com/c-bata/go-prompt"
 	"github.com/jncornett/beans-engine/pkg/skua"
 	"github.com/jncornett/beans-engine/vm"
-	"github.com/jncornett/beans-engine/vm/impl/defaultimpl"
 	"github.com/jncornett/beans-engine/vm/encoding/bytecode"
 	"github.com/jncornett/beans-engine/vm/encoding/human"
-	"github.com/naoina/toml"
+	"github.com/jncornett/beans-engine/vm/impl/defaultimpl"
 )
 
-// NumRegisters ...
-const NumRegisters = 8
+const (
+	// DefaultRegisters ...
+	DefaultRegisters = 8
+	// DefaultMaxIterations ...
+	DefaultMaxIterations = 100
+)
+
+// Args ...
+type Args struct {
+	REPL          bool   `arg:"-i" help:"start in interactive mode"`
+	Registers     uint   `help:"number of registers to allocate"`
+	MaxIterations uint   `help:"max iterations before halting"`
+	Filename      string `arg:"positional" help:"a script file to load"`
+}
 
 func main() {
-	var (
-		forceRepl = flag.Bool("repl", false, "interactive mode")
-	)
-	flag.Parse()
-	if err := run(*forceRepl, flag.Args()); err != nil {
+	args := Args{
+		Registers:     DefaultRegisters,
+		MaxIterations: DefaultMaxIterations,
+	}
+	arg.MustParse(&args)
+	if err := run(&args); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func run(forceRepl bool, args []string) error {
+func run(args *Args) error {
+	log.Println("args", args)
 	var (
 		state = vm.State{
-			Registers: make(vm.Register, NumRegisters),
+			Registers: make(vm.Register, args.Registers),
 		}
 		runtime = vm.Runtime{
-			Impl: defaultimpl.Map,
+			Impl:  defaultimpl.Map,
+			Hooks: vm.RuntimeWithMaxIterations(args.MaxIterations),
 		}
 	)
 	var fileLoaded bool
-	if args := flag.Args(); len(args) > 0 {
+	if args.Filename != "" {
 		fileLoaded = true
-		code, err := load(args[0])
+		code, err := load(args.Filename)
 		if err != nil {
 			return err
 		}
 		state.Script = vm.Script{Code: code}
 	}
-	if !forceRepl && fileLoaded {
-		runtime.Run(&state)
+	runScriptAndExit := fileLoaded && !args.REPL
+	if runScriptAndExit {
+		result := runtime.Run(&state)
 		snap := state.Snapshot()
-		b, err := toml.Marshal(&snap)
-		if err != nil {
-			return err
+		summary := map[string]interface{}{
+			"result": result,
+			"state":  snap,
 		}
-		_, err = fmt.Print(string(b))
-		return err
+		return dumpTOML(summary)
 	}
 	repl := newRepl(&state, &runtime)
 	repl.Loop()
@@ -70,7 +85,7 @@ func run(forceRepl bool, args []string) error {
 
 func newRepl(state *vm.State, runtime *vm.Runtime) *skua.Repl {
 	const contextLines = 2
-	printList := func(start, iptr int, code []vm.Instruction) error {
+	printList := func(start, iptr int, code []vm.Op) error {
 		for i, instr := range code {
 			s := " "
 			if i+start == iptr {
@@ -129,7 +144,7 @@ func newRepl(state *vm.State, runtime *vm.Runtime) *skua.Repl {
 					"new": skua.Command{
 						Description: "write new script",
 						Run: func([]string) error {
-							var code []vm.Instruction
+							var code []vm.Op
 						Loop:
 							for {
 								line := strings.TrimSpace(prompt.Input(fmt.Sprintf(" %2d: ", len(code)+1), opCodeCompleter))
@@ -287,7 +302,7 @@ func saveFile(filename string, p []byte) error {
 	return err
 }
 
-func load(filename string) ([]vm.Instruction, error) {
+func load(filename string) ([]vm.Op, error) {
 	var (
 		b   []byte
 		err error
@@ -308,4 +323,13 @@ func load(filename string) ([]vm.Instruction, error) {
 		}
 	}
 	return code, err
+}
+
+func dumpTOML(v interface{}) error {
+	b, err := toml.Marshal(v)
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Print(string(b))
+	return err
 }

@@ -1,5 +1,7 @@
 package vm
 
+import "math"
+
 const (
 	// FrameSize ...
 	FrameSize = 8
@@ -23,11 +25,16 @@ func (v Value) Not() Value {
 	return 0
 }
 
-// Instruction ...
-type Instruction struct {
-	Op     OpCode
-	Arg    Value
-	Option Value
+// MaxValue ...
+const MaxValue = math.MaxInt8
+
+// MinValue ...
+const MinValue = math.MinInt8
+
+// Op ...
+type Op struct {
+	Type OpCode
+	Arg  Value
 }
 
 // State ...

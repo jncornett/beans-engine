@@ -4,13 +4,13 @@ import (
 	"github.com/jncornett/beans-engine/vm"
 )
 
-// OpPushConst pushes a constant value onto the stack.
-func OpPushConst(ctx vm.Context) {
+// OpPush pushes a constant value onto the stack.
+func OpPush(ctx vm.Context) {
 	ctx.Stack().PushValue(ctx.Instr().Arg)
 }
 
-// OpPopValue pops a value from the current frame.
-func OpPopValue(ctx vm.Context) {
+// OpPop pops a value from the current frame.
+func OpPop(ctx vm.Context) {
 	ctx.Stack().PopValues(1)
 }
 
@@ -34,12 +34,15 @@ func OpReturn(ctx vm.Context) {
 
 // OpJumpIf ...
 func OpJumpIf(ctx vm.Context) {
-	val, _ := ctx.Stack().GetValue(-1)
-	instr := ctx.Instr()
-	if val.Bool() != instr.Arg.Bool() {
+	val, ok := ctx.Stack().GetValue(-1)
+	if ok {
+		ctx.Stack().PopValues(1)
+	}
+	op := ctx.Instr()
+	if !val.Bool() {
 		return
 	}
-	offset := int(instr.Option)
+	offset := int(op.Arg)
 	if offset == 0 {
 		offset = 1 // default to skipping the next instruction
 	}
@@ -81,33 +84,34 @@ func OpDec(ctx vm.Context) {
 
 // OpLoad ...
 func OpLoad(ctx vm.Context) {
-	instr := ctx.Instr()
-	var reg int
-	if instr.Option.Bool() {
+	op := ctx.Instr()
+	val, ok := ctx.Registers().Load(int(op.Arg))
+	if !ok {
 		// load dynamic
-		val, _ := ctx.PopValue()
-		reg = int(val)
-	} else {
-		reg = int(instr.Arg)
+		i, ok := ctx.Stack().GetValue(-1)
+		if ok {
+			ctx.Stack().PopValues(1)
+			val, ok = ctx.Registers().Load(int(i))
+		}
 	}
-	if val, ok := ctx.Registers().Load(reg); ok {
-		ctx.Stack().PushValue(val)
-	}
+	ctx.Stack().PushValue(val)
 }
 
 // OpStore ...
 func OpStore(ctx vm.Context) {
-	instr := ctx.Instr()
-	var reg int
-	if instr.Option.Bool() {
-		// load dynamic
-		val, _ := ctx.PopValue()
-		reg = int(val)
-	} else {
-		reg = int(instr.Arg)
+	op := ctx.Instr()
+	val, ok := ctx.Stack().GetValue(-1)
+	if !ok {
+		return
 	}
-	if val, ok := ctx.PopValue(); ok {
-		ctx.Registers().Store(reg, val)
+	ok = ctx.Registers().Store(int(op.Arg), val)
+	if !ok {
+		// store dynamic
+		i, ok := ctx.Stack().GetValue(-1)
+		if ok {
+			ctx.Stack().PopValues(1)
+			ctx.Registers().Store(int(i), val)
+		}
 	}
 }
 
@@ -118,16 +122,16 @@ func OpLabel(ctx vm.Context) {
 
 // Map ...
 var Map = vm.Impl{
-	vm.OpPushConst: OpPushConst,
-	vm.OpPop:       OpPopValue,
-	vm.OpCall:      OpCall,
-	vm.OpReturn:    OpReturn,
-	vm.OpJumpIf:    OpJumpIf,
-	vm.OpCompare:   OpCompare,
-	vm.OpNot:       OpNot,
-	vm.OpInc:       OpInc,
-	vm.OpDec:       OpDec,
-	vm.OpLoad:      OpLoad,
-	vm.OpStore:     OpStore,
-	vm.OpLabel:     OpLabel,
+	vm.OpPush:    OpPush,
+	vm.OpPop:     OpPop,
+	vm.OpCall:    OpCall,
+	vm.OpReturn:  OpReturn,
+	vm.OpJumpIf:  OpJumpIf,
+	vm.OpCompare: OpCompare,
+	vm.OpNot:     OpNot,
+	vm.OpInc:     OpInc,
+	vm.OpDec:     OpDec,
+	vm.OpLoad:    OpLoad,
+	vm.OpStore:   OpStore,
+	vm.OpLabel:   OpLabel,
 }

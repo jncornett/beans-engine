@@ -10,7 +10,7 @@ func TestScript_Peek(t *testing.T) {
 	tests := []struct {
 		name      string
 		script    Script
-		wantInstr Instruction
+		wantInstr Op
 		wantOk    bool
 	}{
 		{
@@ -19,18 +19,18 @@ func TestScript_Peek(t *testing.T) {
 		{
 			name: "start",
 			script: Script{
-				Code: []Instruction{
-					Instruction{Op: OpPushConst, Arg: 1, Option: 2},
+				Code: []Op{
+					Op{Type: OpPush, Arg: 1},
 				},
 			},
-			wantInstr: Instruction{Op: OpPushConst, Arg: 1, Option: 2},
+			wantInstr: Op{Type: OpPush, Arg: 1},
 			wantOk:    true,
 		},
 		{
 			name: "end",
 			script: Script{
-				Code: []Instruction{
-					Instruction{Op: OpPushConst, Arg: 1, Option: 2},
+				Code: []Op{
+					Op{Type: OpPush, Arg: 1},
 				},
 				Iptr: 1,
 			},
@@ -49,7 +49,7 @@ func TestScript_Next(t *testing.T) {
 	tests := []struct {
 		name      string
 		script    Script
-		wantInstr Instruction
+		wantInstr Op
 		wantOk    bool
 		wantIptr  int
 	}{
@@ -59,19 +59,19 @@ func TestScript_Next(t *testing.T) {
 		{
 			name: "start",
 			script: Script{
-				Code: []Instruction{
-					Instruction{Op: OpPushConst, Arg: 1, Option: 2},
+				Code: []Op{
+					Op{Type: OpPush, Arg: 1},
 				},
 			},
 			wantIptr:  1,
-			wantInstr: Instruction{Op: OpPushConst, Arg: 1, Option: 2},
+			wantInstr: Op{Type: OpPush, Arg: 1},
 			wantOk:    true,
 		},
 		{
 			name: "end",
 			script: Script{
-				Code: []Instruction{
-					Instruction{Op: OpPushConst, Arg: 1, Option: 2},
+				Code: []Op{
+					Op{Type: OpPush, Arg: 1},
 				},
 				Iptr: 1,
 			},

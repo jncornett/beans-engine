@@ -3,6 +3,7 @@ module github.com/jncornett/beans-engine
 go 1.13
 
 require (
+	github.com/alexflint/go-arg v1.2.0
 	github.com/c-bata/go-prompt v0.2.3
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/logrusorgru/aurora v0.0.0-20191116043053-66b7ad493a23

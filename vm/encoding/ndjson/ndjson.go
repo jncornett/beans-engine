@@ -9,9 +9,8 @@ import (
 
 // InstructionField ...
 type InstructionField struct {
-	Op     vm.OpCode `json:"o,omitempty"`
-	Arg    vm.Value  `json:"a,omitempty"`
-	Option vm.Value  `json:"p,omitempty"`
+	Type vm.OpCode `json:"o,omitempty"`
+	Arg  vm.Value  `json:"a,omitempty"`
 }
 
 // Decoder ...
@@ -27,8 +26,8 @@ func NewDecoder(r io.Reader) *Decoder {
 }
 
 // Unmarshal ...
-func Unmarshal(p []byte) ([]vm.Instruction, error) {
-	var out []vm.Instruction
+func Unmarshal(p []byte) ([]vm.Op, error) {
+	var out []vm.Op
 	if err := NewDecoder(bytes.NewReader(p)).Decode(&out); err != nil {
 		return nil, err
 	}
@@ -36,7 +35,7 @@ func Unmarshal(p []byte) ([]vm.Instruction, error) {
 }
 
 // Decode ...
-func (dec *Decoder) Decode(out *[]vm.Instruction) error {
+func (dec *Decoder) Decode(out *[]vm.Op) error {
 	for {
 		var instr InstructionField
 		if err := dec.dec.Decode(&instr); err != nil {
@@ -45,7 +44,7 @@ func (dec *Decoder) Decode(out *[]vm.Instruction) error {
 			}
 			return err
 		}
-		*out = append(*out, vm.Instruction(instr))
+		*out = append(*out, vm.Op(instr))
 	}
 }
 
@@ -62,7 +61,7 @@ func NewEncoder(w io.Writer) *Encoder {
 }
 
 // Marshal ...
-func Marshal(in []vm.Instruction) ([]byte, error) {
+func Marshal(in []vm.Op) ([]byte, error) {
 	var buf bytes.Buffer
 	if err := NewEncoder(&buf).Encode(in); err != nil {
 		return nil, err
@@ -71,7 +70,7 @@ func Marshal(in []vm.Instruction) ([]byte, error) {
 }
 
 // Encode ...
-func (enc *Encoder) Encode(in []vm.Instruction) error {
+func (enc *Encoder) Encode(in []vm.Op) error {
 	for _, instr := range in {
 		if err := enc.enc.Encode((*InstructionField)(&instr)); err != nil {
 			return err

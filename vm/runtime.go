@@ -1,10 +1,24 @@
 package vm
 
+// RuntimeHook ...
+type RuntimeHook int
+
+const (
+	// RuntimeHookBeforeStep ...
+	RuntimeHookBeforeStep RuntimeHook = iota
+)
+
+// RuntimeHandler ...
+type RuntimeHandler func(*Runtime, *State, *RunResult) (ok bool)
+
+// RuntimeHookConfig ...
+type RuntimeHookConfig map[RuntimeHook][]RuntimeHandler
+
 // Runtime ...
 type Runtime struct {
-	MaxIterations int
-	FrameSize     int
-	Impl          Impl
+	FrameSize int
+	Impl      Impl
+	Hooks     map[RuntimeHook][]RuntimeHandler
 }
 
 // RunResult ...
@@ -14,13 +28,17 @@ type RunResult struct {
 }
 
 type runtimeContext struct {
-	runtime     *Runtime
-	state       *State
-	instruction Instruction
+	runtime *Runtime
+	state   *State
+	op      Op
 }
 
-func (ctx runtimeContext) Instr() Instruction {
-	return ctx.instruction
+func (ctx runtimeContext) Instr() Op {
+	return ctx.Op()
+}
+
+func (ctx runtimeContext) Op() Op {
+	return ctx.op
 }
 
 func (ctx runtimeContext) Stack() *Stack {
@@ -63,7 +81,7 @@ func (ctx runtimeContext) Registers() *Register {
 
 // Context ...
 type Context interface {
-	Instr() Instruction
+	Instr() Op
 	Stack() *Stack
 	PopFrame() (*StackFrame, bool)
 	PopValue() (Value, bool)
@@ -75,7 +93,7 @@ type Context interface {
 func (r *Runtime) Run(state *State) (result RunResult) {
 	for {
 		// Halt check
-		if r.MaxIterations > 0 && (result.Iterations >= r.MaxIterations) {
+		if !r.hook(RuntimeHookBeforeStep, state, &result) {
 			result.Interrupted = true
 			break
 		}
@@ -99,13 +117,55 @@ func (r *Runtime) Step(state *State) (ok bool) {
 }
 
 // Exec executes an arbitrary instruction against state.
-func (r *Runtime) Exec(state *State, instr Instruction) {
+func (r *Runtime) Exec(state *State, instr Op) {
 	ctx := runtimeContext{
-		runtime:     r,
-		state:       state,
-		instruction: instr,
+		runtime: r,
+		state:   state,
+		op:      instr,
 	}
-	if fn, ok := r.Impl[instr.Op]; ok {
+	if fn, ok := r.Impl[instr.Type]; ok {
 		fn(&ctx)
+	}
+}
+
+func (r *Runtime) hook(rh RuntimeHook, state *State, result *RunResult) (ok bool) {
+	ok = true
+	for _, h := range r.Hooks[rh] {
+		ok = h(r, state, result)
+		if !ok {
+			break
+		}
+	}
+	return ok
+}
+
+// AddHookFunc ...
+func (r *Runtime) AddHookFunc(rh RuntimeHook, h RuntimeHandler) *Runtime {
+	r.Hooks[rh] = append(r.Hooks[rh], h)
+	return r
+}
+
+// AddHook ...
+func (r *Runtime) AddHook(cfg RuntimeHookConfig) *Runtime {
+	for rh, handlers := range cfg {
+		r.Hooks[rh] = append(r.Hooks[rh], handlers...)
+	}
+	return r
+}
+
+// RemoveHooks ...
+func (r *Runtime) RemoveHooks(rh RuntimeHook) *Runtime {
+	delete(r.Hooks, rh)
+	return r
+}
+
+// RuntimeWithMaxIterations ...
+func RuntimeWithMaxIterations(max uint) RuntimeHookConfig {
+	return RuntimeHookConfig{
+		RuntimeHookBeforeStep: []RuntimeHandler{
+			func(r *Runtime, state *State, result *RunResult) (ok bool) {
+				return result.Iterations < int(max)
+			},
+		},
 	}
 }

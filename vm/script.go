@@ -2,20 +2,20 @@ package vm
 
 // Script ...
 type Script struct {
-	Code []Instruction
+	Code []Op
 	Iptr int
 }
 
 // Peek ...
-func (script Script) Peek() (instr Instruction, ok bool) {
+func (script Script) Peek() (instr Op, ok bool) {
 	if script.Iptr >= len(script.Code) {
-		return Instruction{}, false
+		return Op{}, false
 	}
 	return script.Code[script.Iptr], true
 }
 
 // Next ...
-func (script *Script) Next() (instr Instruction, ok bool) {
+func (script *Script) Next() (instr Op, ok bool) {
 	instr, ok = script.Peek()
 	if ok {
 		script.Iptr++
@@ -28,7 +28,7 @@ func (script *Script) FindNextLabel(val Value) (iptr int, ok bool) {
 	// FIXME linear runtime
 	for i := script.Iptr; i < len(script.Code); i++ {
 		instr := script.Code[i]
-		if instr.Op != OpLabel {
+		if instr.Type != OpLabel {
 			continue
 		}
 		if instr.Arg != val {
@@ -39,7 +39,7 @@ func (script *Script) FindNextLabel(val Value) (iptr int, ok bool) {
 	if script.Iptr < len(script.Code) {
 		for i := 0; i < script.Iptr; i++ {
 			instr := script.Code[i]
-			if instr.Op != OpLabel {
+			if instr.Type != OpLabel {
 				continue
 			}
 			if instr.Arg != val {
