@@ -1,8 +1,8 @@
-package generator
+package genome
 
 import (
+	"github.com/jncornett/beans-engine/evo/vm"
 	"github.com/jncornett/beans-engine/pkg/discrete"
-	"github.com/jncornett/beans-engine/vm"
 )
 
 // OpCodeVar defines a random variable over OpCodes.
@@ -88,3 +88,12 @@ var Default = NewOpVar(map[vm.OpCode]OpConfig{
 	vm.OpStore:   OpConfig{Weight: 2, Arg: ValueVar{discrete.Range(0, 9)}},
 	vm.OpLabel:   OpConfig{Weight: 1, Arg: ValueVar{discrete.Range(0, 9)}},
 })
+
+// SampleN ...
+func SampleN(ov OpVar, n int) []vm.Op {
+	var out []vm.Op
+	for i := 0; i < n; i++ {
+		out = append(out, ov.Sample())
+	}
+	return out
+}

@@ -1,4 +1,4 @@
-package ndjson
+package evo
 
 import (
 	"testing"

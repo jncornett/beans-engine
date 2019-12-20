@@ -1,4 +1,4 @@
-package human
+package json
 
 import (
 	"testing"

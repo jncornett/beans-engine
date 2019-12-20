@@ -1,4 +1,4 @@
-package ndjson
+package json
 
 import (
 	"bytes"
@@ -8,8 +8,8 @@ import (
 	"github.com/jncornett/beans-engine/evo/vm"
 )
 
-// InstructionField ...
-type InstructionField struct {
+// OpField ...
+type OpField struct {
 	Type vm.OpCode `json:"o,omitempty"`
 	Arg  vm.Value  `json:"a,omitempty"`
 }
@@ -37,16 +37,7 @@ func Unmarshal(p []byte) ([]vm.Op, error) {
 
 // Decode ...
 func (dec *Decoder) Decode(out *[]vm.Op) error {
-	for {
-		var instr InstructionField
-		if err := dec.dec.Decode(&instr); err != nil {
-			if err == io.EOF {
-				return nil
-			}
-			return err
-		}
-		*out = append(*out, vm.Op(instr))
-	}
+	return dec.dec.Decode(out)
 }
 
 // Encoder ...
@@ -72,10 +63,5 @@ func Marshal(in []vm.Op) ([]byte, error) {
 
 // Encode ...
 func (enc *Encoder) Encode(in []vm.Op) error {
-	for _, instr := range in {
-		if err := enc.enc.Encode((*InstructionField)(&instr)); err != nil {
-			return err
-		}
-	}
-	return nil
+	return enc.enc.Encode(in)
 }

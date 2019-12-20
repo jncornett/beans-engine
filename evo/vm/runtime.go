@@ -16,9 +16,8 @@ type RuntimeHookConfig map[RuntimeHook][]RuntimeHandler
 
 // Runtime ...
 type Runtime struct {
-	FrameSize int
-	Impl      Impl
-	Hooks     map[RuntimeHook][]RuntimeHandler
+	Impl  Impl
+	Hooks map[RuntimeHook][]RuntimeHandler
 }
 
 // RunResult ...

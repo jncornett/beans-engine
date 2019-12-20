@@ -15,41 +15,44 @@ import (
 	"github.com/naoina/toml"
 	"github.com/olekukonko/tablewriter"
 
+	"github.com/jncornett/beans-engine/evo/cli"
 	"github.com/jncornett/beans-engine/evo/vm"
-	"github.com/jncornett/beans-engine/evo/vm/encoding/bytecode"
-	"github.com/jncornett/beans-engine/evo/vm/encoding/human"
+	human "github.com/jncornett/beans-engine/evo/vm/encoding/evo"
+	"github.com/jncornett/beans-engine/evo/vm/encoding/evox"
+	"github.com/jncornett/beans-engine/evo/vm/impl"
 	"github.com/jncornett/beans-engine/pkg/skua"
-	"github.com/jncornett/beans/packages/engine/vm/impl/defaultimpl"
 )
 
 const (
-	// DefaultRegisters ...
-	DefaultRegisters = 8
-	// DefaultMaxIterations ...
-	DefaultMaxIterations = 100
+	defaultRegisters     = 8
+	defaultMaxIterations = 100
+	defaultEncoding      = cli.EncodingEvo
 )
 
 // Args ...
 type Args struct {
-	REPL          bool   `arg:"-i" help:"start in interactive mode"`
-	Registers     uint   `help:"number of registers to allocate"`
-	MaxIterations uint   `help:"max iterations before halting"`
-	Filename      string `arg:"positional" help:"a script file to load"`
+	REPL          bool         `arg:"-i" help:"start in interactive mode"`
+	Registers     uint         `help:"number of registers to allocate"`
+	MaxIterations uint         `help:"max iterations before halting"`
+	Format        cli.Encoding `help:"input file format"`
+	Filename      string       `arg:"positional" help:"a script file to load"`
 }
 
 func main() {
 	args := Args{
-		Registers:     DefaultRegisters,
-		MaxIterations: DefaultMaxIterations,
+		Registers:     defaultRegisters,
+		MaxIterations: defaultMaxIterations,
 	}
 	arg.MustParse(&args)
+	if args.Filename == cli.StdioFilename && args.Format == cli.EncodingNone {
+		args.Format = defaultEncoding
+	}
 	if err := run(&args); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func run(args *Args) error {
-	log.Println("args", args)
 	var (
 		state = vm.State{
 			Registers: make(vm.Register, args.Registers),
@@ -62,7 +65,7 @@ func run(args *Args) error {
 	var fileLoaded bool
 	if args.Filename != "" {
 		fileLoaded = true
-		code, err := load(args.Filename)
+		code, err := cli.Load(args.Filename, args.Format)
 		if err != nil {
 			return err
 		}
@@ -186,11 +189,11 @@ func newRepl(state *vm.State, runtime *vm.Runtime) *skua.Repl {
 					"save": skua.Command{
 						Description: "save script to file",
 						Subcommands: map[string]skua.Command{
-							"bytecode": skua.Command{
-								Description: "output to bytecode",
+							"evox": skua.Command{
+								Description: "output in EvoX format",
 								Run: func(args []string) error {
 									filename := firstString(args)
-									b, err := bytecode.Marshal(state.Script.Code)
+									b, err := evox.Marshal(state.Script.Code)
 									if err != nil {
 										return err
 									}
@@ -315,7 +318,7 @@ func load(filename string) ([]vm.Op, error) {
 	if err != nil {
 		return nil, err
 	}
-	code, err := bytecode.Unmarshal(b)
+	code, err := evox.Unmarshal(b)
 	if err != nil {
 		code, err = human.Unmarshal(b)
 		if err != nil {
