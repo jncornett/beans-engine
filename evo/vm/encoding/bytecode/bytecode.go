@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/jncornett/beans-engine/vm"
 	"io"
+
+	"github.com/jncornett/beans-engine/evo/vm"
 )
 
 // MagicField ...

@@ -2,10 +2,12 @@ package bytecode
 
 import (
 	"bytes"
-	"github.com/jncornett/beans-engine/vm"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
+
+	"github.com/jncornett/beans-engine/evo/vm"
 )
 
 func TestMarshalUnmarshal(t *testing.T) {

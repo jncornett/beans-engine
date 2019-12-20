@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/jncornett/beans-engine/vm"
+	"github.com/jncornett/beans-engine/evo/vm"
 )
 
 // OpCodes ...

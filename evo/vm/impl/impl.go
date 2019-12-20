@@ -1,8 +1,6 @@
-package defaultimpl
+package impl
 
-import (
-	"github.com/jncornett/beans-engine/vm"
-)
+import "github.com/jncornett/beans-engine/evo/vm"
 
 // OpPush pushes a constant value onto the stack.
 func OpPush(ctx vm.Context) {

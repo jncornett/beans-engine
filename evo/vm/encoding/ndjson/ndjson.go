@@ -3,8 +3,9 @@ package ndjson
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/jncornett/beans-engine/vm"
 	"io"
+
+	"github.com/jncornett/beans-engine/evo/vm"
 )
 
 // InstructionField ...

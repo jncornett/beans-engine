@@ -15,11 +15,11 @@ import (
 	"github.com/naoina/toml"
 	"github.com/olekukonko/tablewriter"
 
+	"github.com/jncornett/beans-engine/evo/vm"
+	"github.com/jncornett/beans-engine/evo/vm/encoding/bytecode"
+	"github.com/jncornett/beans-engine/evo/vm/encoding/human"
 	"github.com/jncornett/beans-engine/pkg/skua"
-	"github.com/jncornett/beans-engine/vm"
-	"github.com/jncornett/beans-engine/vm/encoding/bytecode"
-	"github.com/jncornett/beans-engine/vm/encoding/human"
-	"github.com/jncornett/beans-engine/vm/impl/defaultimpl"
+	"github.com/jncornett/beans/packages/engine/vm/impl/defaultimpl"
 )
 
 const (
@@ -55,7 +55,7 @@ func run(args *Args) error {
 			Registers: make(vm.Register, args.Registers),
 		}
 		runtime = vm.Runtime{
-			Impl:  defaultimpl.Map,
+			Impl:  impl.Map,
 			Hooks: vm.RuntimeWithMaxIterations(args.MaxIterations),
 		}
 	)

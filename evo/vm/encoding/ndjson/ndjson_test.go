@@ -1,11 +1,12 @@
-package human
+package ndjson
 
 import (
 	"testing"
 
-	"github.com/jncornett/beans-engine/vm"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/jncornett/beans-engine/evo/vm"
 )
 
 func TestMarshalUnmarshal(t *testing.T) {
