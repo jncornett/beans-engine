@@ -27,7 +27,7 @@ func (rv RecombineVar) Sample() RecombineEntry {
 
 // DefaultRecombine ...
 var DefaultRecombine = RecombineVar{
-	Length: discrete.Range(1, 4),
+	Length: discrete.Range(3, 4),
 	Switch: discrete.Bernoulli(0.5),
 }
 

@@ -34,7 +34,7 @@ func (cv ChangeVar) Sample() Change {
 // DefaultChange ...
 var DefaultChange = ChangeVar{
 	IntVar: discrete.FromPMF([]discrete.IntVarPoint{
-		discrete.IntVarPoint{Y: 0.8, X: discrete.Const(int64(ChangeNone))},
+		discrete.IntVarPoint{Y: 0.9, X: discrete.Const(int64(ChangeNone))},
 		discrete.IntVarPoint{Y: 1.0, X: discrete.Range(int64(ChangeInsert), int64(ChangeMax))},
 	}),
 }

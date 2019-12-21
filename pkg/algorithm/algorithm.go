@@ -11,7 +11,7 @@ type Sorter struct {
 
 func (s Sorter) Len() int           { return s.SortLen() }
 func (s Sorter) Swap(i, j int)      { s.SortSwap(i, j) }
-func (s Sorter) Less(i, j int) bool { return s.Less(i, j) }
+func (s Sorter) Less(i, j int) bool { return s.SortLess(i, j) }
 
 // Sort ...
 func Sort(

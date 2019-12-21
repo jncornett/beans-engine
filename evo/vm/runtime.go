@@ -140,12 +140,18 @@ func (r *Runtime) hook(rh RuntimeHook, state *State, result *RunResult) (ok bool
 
 // AddHookFunc ...
 func (r *Runtime) AddHookFunc(rh RuntimeHook, h RuntimeHandler) *Runtime {
+	if r.Hooks == nil {
+		r.Hooks = make(map[RuntimeHook][]RuntimeHandler)
+	}
 	r.Hooks[rh] = append(r.Hooks[rh], h)
 	return r
 }
 
 // AddHook ...
 func (r *Runtime) AddHook(cfg RuntimeHookConfig) *Runtime {
+	if r.Hooks == nil {
+		r.Hooks = make(map[RuntimeHook][]RuntimeHandler)
+	}
 	for rh, handlers := range cfg {
 		r.Hooks[rh] = append(r.Hooks[rh], handlers...)
 	}
